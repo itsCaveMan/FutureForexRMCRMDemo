@@ -1,0 +1,173 @@
+{% extends "backend_base.html" %}
+
+{% load static %}
+
+{% block content %}
+
+<head>
+  <title>Clients</title>
+</head>
+
+<!-- ==========   PAGE TITLE  -  BREAD CRUMBS   ==========  -->
+<div class="breadcrumb">
+    <a href="/client/">
+        <h1>Client</h1>
+    </a>
+</div>
+
+<div class="m-5">
+  <h1>{{ client }}</h1>
+</div>
+
+
+<!-- ============  Client info  ============-->
+<div class="m-5">
+  <h1>Client Info</h1>
+
+  <table class="table table-flush">
+    <thead>
+      <tr>
+        <th>
+          First name
+        </th>
+        <th>
+          Last name
+        </th>
+        <th>
+          Email
+        </th>
+        <th>
+          Username
+        </th>
+        <th>
+          Created on
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          {{ client.profile.first_name }}
+        </td>
+        <td>
+          {{ client.profile.last_name }}
+        </td>
+        <td>
+          {{ client.email }}
+        </td>
+        <td>
+          {{ client.username }}
+        </td>
+        <td>
+          {{ client.created_on_utc }}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>
+
+
+
+
+<!-- ============  Request document  ============-->
+<div class="m-5">
+
+  <h1>Request document from client:</h1>
+  <form action="/request_document/" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <input class="form-control" type="text" placeholder="Email subject" name="subject" >
+    <input class="form-control" type="text" placeholder="Email body (TODO: this should be a RichTextEditor)" name="body" >
+    <select class="form-control" name="doc_type">
+      <option value="OFFICIAL">Offical</option>
+      <option value="FINANCIAL">Financial</option>
+      <option value="LORUM">Lorum</option>
+      <option value="IPSUM">Ipsum</option>
+    </select>
+    <input type="file" name="requested_file">
+
+    <input name="client_id" value="{{ client.id }}" hidden>
+
+    <button class="btn btn-success" style="padding: 2rem">Create document request</button>
+
+  </form>
+
+</div>
+
+
+
+
+<!-- ============  Document history  ============-->
+<div class="m-5">
+  <h1>Client Documentation History</h1>
+
+  <table class="table table-flush">
+    <thead>
+      <tr>
+        <th>
+          RM user
+        </th>
+        <th>
+          Uploaded by
+        </th>
+        <th>
+          Doc name
+        </th>
+        <th>
+          File type
+        </th>
+        <th>
+          Email subject
+        </th>
+        <th>
+          Email body
+        </th>
+        <th>
+          document (AWS hyperlink)
+        </th>
+        <th>
+          Created on
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for document in all_client_documents %}
+      <tr>
+        <td>
+          {{ document.rm.full_name }}
+        </td>
+        <td>
+          {{ document.uploaded_by }}
+        </td>
+        <td>
+          {{ document.name }}
+        </td>
+        <td>
+          {{ document.extension }}
+        </td>
+        <td>
+          {{ document.email.subject }}
+        </td>
+        <td>
+          {{ document.email.body }}
+        </td>
+        <td>
+          <a class="btn btn-secondary btn-raised-secondary" target='_blank' href="{{ document.document.url }}">Download</a>
+          <!-- <a class="btn btn-raised-secondary" download>Download</a> -->
+        </td>
+        <td>
+          {{ document.created_on_utc }}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+</div>
+
+
+
+
+{% endblock %}
+

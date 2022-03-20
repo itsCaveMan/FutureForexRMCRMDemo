@@ -1,0 +1,50 @@
+{% extends "backend_base.html" %}
+
+{% load static %}
+
+{% block content %}
+
+<head>
+  <title>Clients</title>
+</head>
+
+<!-- ==========   PAGE TITLE  -  BREAD CRUMBS   ==========  -->
+<div class="breadcrumb">
+    <a href="/client/">
+        <h1>Client</h1>
+    </a>
+</div>
+
+    <h1>{{ email }}</h1>
+
+
+
+
+<!-- ============  Submit document  ============-->
+<div class="m-5">
+
+  <h1>Submit requested document:</h1>
+
+  <h4>{{ email.subject }}</h4>
+  <h5>{{ email.body }}</h5>
+
+  <form action="/client_request/" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <input type="file" name="requested_file">
+
+    <input name="token" value="{{ email.uuid }}" hidden>
+
+    <button class="btn btn-success" style="padding: 2rem">Submit document request</button>
+
+  </form>
+
+</div>
+
+
+
+
+
+
+{% endblock %}
+

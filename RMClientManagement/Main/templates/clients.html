@@ -1,0 +1,73 @@
+{% extends "backend_base.html" %}
+
+{% load static %}
+
+{% block content %}
+
+<head>
+  <title>Clients</title>
+</head>
+
+<!-- ==========   PAGE TITLE  -  BREAD CRUMBS   ==========  -->
+<div class="breadcrumb">
+    <a href="/clients/">
+        <h1>Clients</h1>
+    </a>
+</div>
+
+
+
+
+<!-- ============  client create form  ============-->
+<div class="m-5">
+
+
+  <h1>Create new client</h1>
+  <form action="/client/" method="post">
+    {% csrf_token %}
+
+    <input class="form-control" type="text" required placeholder="first name" name="first_name">
+    <input class="form-control" type="text" required placeholder="last name" name="last_name" >
+    <input class="form-control" type="email" required placeholder="email" name="email" >
+    <button class="btn btn-raised btn-raised-success m-1" type="submit">+ Create Client</button>
+  </form>
+
+</div>
+
+
+
+<div class="m-5">
+
+  <h1>All Your clients</h1>
+
+  <table class="table table-flush">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>View</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for client in all_rm_clients %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ client.full_name }}</td>
+          <td>{{ client.email }}</td>
+          <td>
+            <a class="btn btn-raised btn-raised-secondary m-1" href="/client/{{ client.id }}" >View client</a>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+
+</div>
+
+
+
+
+{% endblock %}
+

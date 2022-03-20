@@ -1,0 +1,26 @@
+{% extends "backend_base.html" %}
+
+{% load static %}
+
+{% block content %}
+
+<head>
+  <title>Dashboard</title>
+</head>
+
+<!-- ==========   PAGE TITLE  -  BREAD CRUMBS   ==========  -->
+<div class="breadcrumb">
+    <a href="/dashboard/">
+        <h1>Dashboard</h1>
+    </a>
+</div>
+
+
+<h1>number of clients: {{ client_count }}</h1>
+<h1>number of emails: {{ email_count }}</h1>
+<h1>number of documents: {{ document_count }}</h1>
+
+<a class="btn btn-primary btn-raised-primary" href="/clients/">view all your clients</a>
+
+{% endblock %}
+
