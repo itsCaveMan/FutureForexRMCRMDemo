@@ -1,10 +1,11 @@
 from django.shortcuts import render, redirect
 from django.views import View
 from django.contrib.auth import login
+from django.contrib.auth.models import User
 from django.core.mail import send_mail, EmailMessage
 
 from .models import Document, Email
-from Users.models import User, UserProfile
+from Users.models import Profile, ProfileBasicDetails, ProfileExtendedDetails
 
 
 # ==============   Misc   ==============
@@ -24,30 +25,15 @@ def dashboard(request):
     if request.user.is_anonymous:
         default_user = User.objects.filter(email="default@example.com").first()
         if not default_user: # default user does not exist, create default user
-            user = User.objects.create_user(
-                                email='default@example.com',
-                                username='default_rm',
-                                password='1234Abcd!')
-            user.is_active = True
-            user.is_superuser = True
-            user.email_confirmed = True
-            user.is_staff = True
-            user.save()
-
-            profile = UserProfile()
-            profile.user = user
-            profile.first_name = 'default'
-            profile.last_name = 'user'
-            profile.save()
-            default_user = user
+            _create_user('rm1@futureforex.com','rm1@futureforex.com','Abcd1234!')
 
         # log in default user
         login(request, default_user, backend='django.contrib.auth.backends.ModelBackend')
 
     context = {
-        'client_count' : User.objects.filter(primary_rm=request.user).count(),
-        'email_count' : Email.objects.filter(rm=request.user).count(),
-        'document_count': Document.objects.filter(uploaded_by_user=request.user).count()
+        # 'client_count' : User.objects.filter(primary_rm=request.user).count(),
+        # 'email_count' : Email.objects.filter(rm=request.user).count(),
+        # 'document_count': Document.objects.filter(uploaded_by_user=request.user).count()
     }
     return render(request, 'dashboard.html', context)
 
@@ -258,8 +244,6 @@ def _create_user(
         password:str = '',
         first_name:str = '',
         last_name:str = '',
-        is_superuser:bool = False,
-        is_staff:bool = False,
         ):
     '''
         A utility function to create a User with a UserProfile
@@ -268,25 +252,20 @@ def _create_user(
     :param password:
     :param first_name:
     :param last_name:
-    :param is_superuser:
-    :param is_staff:
     :return:
     '''
     user = User.objects.create_user(
-        email=email,
         username=username,
+        email=email,
         password=password)
     user.is_active = True
-    user.is_superuser = is_superuser
-    user.is_staff = is_staff
-    user.email_confirmed = True
     user.save()
 
-    profile = UserProfile()
-    profile.user = user
-    profile.first_name = first_name
-    profile.last_name = last_name
+    profile = Profile(user=user)
     profile.save()
+
+    ProfileBasicDetails(profile=profile, first_name=first_name, last_name=last_name).save()
+    ProfileExtendedDetails(profile=profile).save()
 
     return user
 

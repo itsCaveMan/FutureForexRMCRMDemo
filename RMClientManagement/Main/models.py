@@ -1,71 +1,56 @@
+
+from django.db import models
+
+import uuid as uuid
 import os
-from Users.models import *
 
-class Email(models.Model):
+from Users.models import User
+from RMClientManagement import globals
+from RMClientManagement.globals import BaseModel
 
-    # rm user
-    rm = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True, related_name='email_rm_user')
 
-    # client user
-    client = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True, related_name='email_client_user')
+class Email(BaseModel):
 
-    # sender
-    sender = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True, related_name='email_sender_user')
+    # User who created this email
+    sender = models.ForeignKey(User, on_delete=models.PROTECT, related_name='sender_user')
 
-    # recieving email
-    reciever_email = models.CharField(max_length=255, default='', blank=True)
+    # User intended to receive this email
+    recipient = models.ForeignKey(User, on_delete=models.PROTECT, related_name='recipient_user')
 
-    # subject
+    # email subject
     subject = models.TextField(default='', blank=True)
 
-    # body
+    # email body
     body = models.TextField(default='', blank=True)
 
-    # token  - used by url to identify this email row
+    # token  - used by url to identify this email
     uuid = models.CharField(max_length=255, default=uuid.uuid4)
 
-    # created on
-    created_on_utc      = models.DateTimeField(auto_now_add=True, null=True, editable=False)
+class Document(BaseModel):
 
-    # last modifeid on
-    last_modified_utc   = models.DateTimeField(auto_now=True, null=True)
+    # Who uploaded this document
+    uploaded_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='doc_uploaded_by_user')
 
-class Document(models.Model):
+    # Email record this document is linked to
+    email = models.ForeignKey(Email, on_delete=models.PROTECT, related_name='doc_client_user')
 
-    # name
-    name = models.CharField(max_length=255, default='', blank=True)
+    # The name of the uploaded document
+    document_name = models.CharField(max_length=255, default='', blank=True)
+
+    # a custom name given to this document
+    custom_name = models.CharField(max_length=255, default='', blank=True)
 
     # File
-    # url = models.CharField(max_length=255, default='', blank=True)
-    document = models.FileField(upload_to='documents/%Y/%m/%d/', blank=True, null=True)
+    document = models.FileField(upload_to='documents/%Y/%m/%d/', blank=True, default='DEFAULT/_placeholder.txt')
 
-    # rm user
-    uploaded_by_user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True, related_name='doc_uploaded_by_user')
-
-    # rm user
-    rm = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True, related_name='doc_rm_user')
-
-    # client user
-    client = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True, related_name='doc_client_user')
-
-    # The email this document is related to
-    email = models.ForeignKey(Email, on_delete=models.CASCADE, blank=True, null=True, related_name='doc_client_user')
-
-    RM = 'RM'
-    CLIENT = 'CLIENT'
-    uploaded_by_choices = (
-                        (RM , 'Relational Manager'),
-                        (CLIENT , 'Client'),
-                        )
-    uploaded_by = models.CharField(max_length=255, choices=uploaded_by_choices, default=CLIENT)
-
-    # created on
-    created_on_utc      = models.DateTimeField(auto_now_add=True, null=True, editable=False)
-
-    # last modifeid on
-    last_modified_utc   = models.DateTimeField(auto_now=True, null=True)
+    # Gender
+    document_type = models.CharField(max_length=255, choices=globals.DOCUMENT_TYPE_CHOICES, default=globals.UNDEFINED_DOCUMENT_TYPE)
 
     def extension(self):
+        '''
+            return the file type of this document
+        :return:
+        '''
         name, extension = os.path.splitext(self.document.name)
         return extension
 

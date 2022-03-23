@@ -109,8 +109,9 @@ USE_L10N = True
 
 USE_TZ = True
 
-AUTH_USER_MODEL = 'Users.User'
+# AUTH_USER_MODEL = 'Users.User'
 
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # STATIC
 STATIC_URL = '/static/'
