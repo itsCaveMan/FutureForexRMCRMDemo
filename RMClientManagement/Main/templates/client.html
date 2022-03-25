@@ -10,19 +10,30 @@
 
 <!-- ==========   PAGE TITLE  -  BREAD CRUMBS   ==========  -->
 <div class="breadcrumb">
-    <a href="/client/">
-        <h1>Client</h1>
+    <a href="{% url 'clients' %}">
+        <p>Dashboard > Client</p>
     </a>
 </div>
 
+
+<!-- ============  Client CRUD  ============-->
 <div class="m-5">
-  <h1>{{ client }}</h1>
+    <h1 class="text-center">Update Client</h1>
+    <form action="{% url 'crud_client' %}" method="post">
+
+        {% csrf_token %}
+        {{ client_crud }}
+        <input name="client_id" value="{{ client.id }}" hidden>
+
+        <button class="btn btn-success">Edit client</button>
+
+    </form>
 </div>
 
 
 <!-- ============  Client info  ============-->
 <div class="m-5">
-  <h1>Client Info</h1>
+  <h1 class="text-center">Client Info</h1>
 
   <table class="table table-flush">
     <thead>
@@ -47,10 +58,10 @@
     <tbody>
       <tr>
         <td>
-          {{ client.profile.first_name }}
+          {{ client.first_name }}
         </td>
         <td>
-          {{ client.profile.last_name }}
+          {{ client.last_name }}
         </td>
         <td>
           {{ client.email }}
@@ -59,7 +70,7 @@
           {{ client.username }}
         </td>
         <td>
-          {{ client.created_on_utc }}
+          {{ client.profile.created_on_utc }}
         </td>
       </tr>
     </tbody>
@@ -68,39 +79,81 @@
 </div>
 
 
-
-
 <!-- ============  Request document  ============-->
 <div class="m-5">
 
-  <h1>Request document from client:</h1>
-  <form action="/request_document/" method="post" enctype="multipart/form-data">
+  <h1 class="text-center">Request document from client</h1>
+  <form action="{% url 'request_document' %}" method="post" enctype="multipart/form-data">
     {% csrf_token %}
+    {{ request_document_form }}
+    {{ submit_document_form }}
 
-    <input class="form-control" type="text" placeholder="Email subject" name="subject" >
-    <input class="form-control" type="text" placeholder="Email body (TODO: this should be a RichTextEditor)" name="body" >
-    <select class="form-control" name="doc_type">
-      <option value="OFFICIAL">Offical</option>
-      <option value="FINANCIAL">Financial</option>
-      <option value="LORUM">Lorum</option>
-      <option value="IPSUM">Ipsum</option>
-    </select>
-    <input type="file" name="requested_file">
-
-    <input name="client_id" value="{{ client.id }}" hidden>
-
-    <button class="btn btn-success" style="padding: 2rem">Create document request</button>
+    <button class="btn btn-success my-3">Create document request</button>
 
   </form>
 
 </div>
 
 
+<!-- ============  Email history  ============-->
+<div class="m-5">
+  <h1 class="text-center">"Request Document" Emails</h1>
+
+  <table class="table table-flush">
+    <thead>
+      <tr>
+        <th>
+          Sender
+        </th>
+        <th>
+          Recipient
+        </th>
+        <th>
+          Subject
+        </th>
+        <th>
+          Body
+        </th>
+        <th>
+          UUID
+        </th>
+        <th>
+          Created on
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for email in all_client_emails %}
+      <tr>
+        <td>
+          {{ email.sender.email }}
+        </td>
+        <td>
+          {{ email.recipient }}
+        </td>
+        <td>
+          {{ email.subject }}
+        </td>
+        <td>
+          {{ email.body }}
+        </td>
+        <td>
+          {{ email.uuid }}
+        </td>
+        <td>
+          {{ email.created_on_utc }}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+</div>
 
 
 <!-- ============  Document history  ============-->
 <div class="m-5">
-  <h1>Client Documentation History</h1>
+  <h1 class="text-center">Documents</h1>
 
   <table class="table table-flush">
     <thead>
@@ -124,8 +177,12 @@
           Email body
         </th>
         <th>
+          UUID
+        </th>
+        <th>
           document (AWS hyperlink)
         </th>
+
         <th>
           Created on
         </th>
@@ -135,10 +192,10 @@
       {% for document in all_client_documents %}
       <tr>
         <td>
-          {{ document.rm.full_name }}
+          {{ document.email.sender.email }}
         </td>
         <td>
-          {{ document.uploaded_by }}
+          {{ document.uploaded_by.email }}
         </td>
         <td>
           {{ document.name }}
@@ -153,8 +210,10 @@
           {{ document.email.body }}
         </td>
         <td>
+          {{ document.email.uuid }}
+        </td>
+        <td>
           <a class="btn btn-secondary btn-raised-secondary" target='_blank' href="{{ document.document.url }}">Download</a>
-          <!-- <a class="btn btn-raised-secondary" download>Download</a> -->
         </td>
         <td>
           {{ document.created_on_utc }}
@@ -165,7 +224,6 @@
   </table>
 
 </div>
-
 
 
 

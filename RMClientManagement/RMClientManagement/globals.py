@@ -12,7 +12,7 @@ class BaseModel(models.Model):
 RM = 'RM'
 CLIENT = 'CLIENT'
 UNDEFINED_ROLE = 'UNDEFINED_ROLE'
-uploaded_by_choices = (
+USER_ROLE_CHOICES = (
     (RM, 'Relational Manager'),
     (CLIENT, 'Client'),
     (UNDEFINED_ROLE, 'Undefined role'),

@@ -6,7 +6,7 @@
 <!-- ============  NAV BAR  ============-->
 <div class="main-header">
 
-    <a href="/dashboard/"><div class="logo"><img src="https://futureforex.co.za/wp-content/uploads/2021/10/cropped-fav-192x192.png" alt="" /></div></a>
+    <a href="{% url 'dashboard' %}"><div class="logo"><img src="https://futureforex.co.za/wp-content/uploads/2021/10/cropped-fav-192x192.png" alt="" /></div></a>
     <div class="menu-toggle">
         <div></div>
         <div></div>
@@ -20,7 +20,6 @@
 
     <p class="m-4">SESSION USER --> {{ request.user }}</p>
 
-      <!-- ======  SPACE  ======-->
     <div style="margin: auto"></div>
 
 
@@ -36,6 +35,7 @@
     <div class="header-topnav">
         <div class="container-fluid">
 
+         <!-- ============  TODO  ============-->
           <style media="screen">
             @media screen and (min-width: 770px) {
               .layout-horizontal-bar .header-topnav .topnav {
@@ -59,9 +59,6 @@
 
                 .layout-horizontal-bar .header-topnav .topnav ul ul li {
                     width: 190px;
-                    /* float: none; */
-                    /* display: list-item; */
-                    /* position: relative; */
                 }
             }
           </style>
@@ -73,13 +70,13 @@
                     <li>
                         <div>
                             <div>
-                                <a href="/dashboard/">
+                                <a href="{% url 'dashboard' %}">
                                   <i class="nav-icon mr-2 i-Bar-Chart"></i>
                                   Dashboard
                                 </a>
                                 <input id="drop-2" type="checkbox" />
                                 <ul>
-                                    <li><a href="/dashboard/"><i class="nav-icon mr-2 i-Clock-3"></i><span class="item-name">Dashboard</span></a></li>
+                                    <li><a href="{% url 'dashboard' %}"><i class="nav-icon mr-2 i-Clock-3"></i><span class="item-name">Dashboard</span></a></li>
                                 </ul>
                             </div>
                         </div>
@@ -89,14 +86,13 @@
                     <li>
                         <div>
                             <div>
-                                <!-- <label class="toggle" for="drop-2">Dashboard</label> -->
-                                <a href="#">
+                                <a href="{% url 'clients' %}">
                                   <i class="nav-icon mr-2 i-Bar-Chart"></i>
                                   Clients
                                 </a>
                                 <input id="drop-2" type="checkbox" />
                                 <ul>
-                                    <li><a href="/clients/"><i class="nav-icon mr-2 i-Clock-3"></i><span class="item-name">My Clients</span></a></li>
+                                    <li><a href="{% url 'clients' %}"><i class="nav-icon mr-2 i-Clock-3"></i><span class="item-name">My Clients</span></a></li>
                                 </ul>
                             </div>
                         </div>

@@ -10,35 +10,32 @@
 
 <!-- ==========   PAGE TITLE  -  BREAD CRUMBS   ==========  -->
 <div class="breadcrumb">
-    <a href="/clients/">
-        <h1>Clients</h1>
+    <a href="{% url 'clients' %}">
+        <p>Dashboard > Clients</p>
     </a>
 </div>
 
 
-
-
-<!-- ============  client create form  ============-->
+<!-- ============  CREATE CLIENT  ============-->
 <div class="m-5">
 
+  <h1 class="text-center">Create new client</h1>
 
-  <h1>Create new client</h1>
-  <form action="/client/" method="post">
-    {% csrf_token %}
+    <form action="{% url 'crud_client' %}" method="post">
+        {% csrf_token %}
 
-    <input class="form-control" type="text" required placeholder="first name" name="first_name">
-    <input class="form-control" type="text" required placeholder="last name" name="last_name" >
-    <input class="form-control" type="email" required placeholder="email" name="email" >
-    <button class="btn btn-raised btn-raised-success m-1" type="submit">+ Create Client</button>
-  </form>
+        {{ new_client_form }}
+        <button class="btn btn-raised btn-raised-success m-1" type="submit">+ Create Client</button>
+
+    </form>
 
 </div>
 
 
-
+<!-- ============  CLIENTS TABL  ============-->
 <div class="m-5">
 
-  <h1>All Your clients</h1>
+  <h1 class="text-center">All Your clients</h1>
 
   <table class="table table-flush">
     <thead>
@@ -53,10 +50,10 @@
       {% for client in all_rm_clients %}
         <tr>
           <td>{{ forloop.counter }}</td>
-          <td>{{ client.full_name }}</td>
+          <td>{{ client.first_name }} {{ client.last_name }}</td>
           <td>{{ client.email }}</td>
           <td>
-            <a class="btn btn-raised btn-raised-secondary m-1" href="/client/{{ client.id }}" >View client</a>
+            <a class="btn btn-raised btn-raised-secondary m-1" href="{% url 'view_client' client_id=client.id %}" >View client</a>
           </td>
         </tr>
       {% endfor %}
@@ -65,8 +62,6 @@
 
 
 </div>
-
-
 
 
 {% endblock %}

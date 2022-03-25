@@ -1,74 +1,58 @@
-from django.shortcuts import render, redirect
+from django.db.models import Q
+from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
-from django.contrib.auth import login
 from django.contrib.auth.models import User
-from django.core.mail import send_mail, EmailMessage
 
+from Main.forms import ClientForm, RequestDocumentForm, SubmitDocumentForm
 from .models import Document, Email
 from Users.models import Profile, ProfileBasicDetails, ProfileExtendedDetails
+from RMClientManagement import globals
 
-
-# ==============   Misc   ==============
 def dashboard(request):
     '''
-        create default user "RM user"(Relational Manager) if the default user is not created
-        Logs the default user in if the request user is not logged in
-
-        Queries the total number of:
-            1. Clients belonging to this RM
-            2. Emails belonging to this RM
-            3. Documents belonging to this RM
-
-    :param request:
-    :return: render
+        Dashboard/Index/Landing page
+        returns some basic metrics
     '''
-    if request.user.is_anonymous:
-        default_user = User.objects.filter(email="default@example.com").first()
-        if not default_user: # default user does not exist, create default user
-            _create_user('rm1@futureforex.com','rm1@futureforex.com','Abcd1234!')
-
-        # log in default user
-        login(request, default_user, backend='django.contrib.auth.backends.ModelBackend')
 
     context = {
-        # 'client_count' : User.objects.filter(primary_rm=request.user).count(),
-        # 'email_count' : Email.objects.filter(rm=request.user).count(),
-        # 'document_count': Document.objects.filter(uploaded_by_user=request.user).count()
+        'client_count' : User.objects.filter(profile__profileextendeddetails__managing_rm=request.user).count(),
+        'email_count' : Email.objects.filter(sender=request.user).count(),
+        'document_count': Document.objects.filter(uploaded_by=request.user).count()
     }
     return render(request, 'dashboard.html', context)
 
-
-
-# ==============   Client CRUD   ==============
-class Clients(View):
+def clients(request):
     '''
-        Generic Class View to simply return all Client users belonging to this logged in RM user
+        View all clients being managed by this RM
     '''
-    def get(self, request):
-        context = {
-            'all_rm_clients': User.objects.filter(primary_rm__id=request.user.id),
-        }
-        return render(request, 'clients.html', context)
+    context = {
+        'new_client_form': ClientForm(),
+        'all_rm_clients': User.objects.filter(profile__profileextendeddetails__managing_rm__id=request.user.id),
+    }
+    return render(request, 'clients.html', context)
 
 class Client(View):
     '''
         Generic Class View to handle the CRUD of Client Users
     '''
+
     def get(self, request, client_id:int):
         '''
             Return a page view that details a single client
-        :param request:
-        :param client_id:
-        :return:
+            with a form to update the client user
+            a form to request a new document
+            and all the documents and emails related to this client
         '''
-        context = {}
-        try:
-            context = {
-                'client': User.objects.get(id=client_id),
-                'all_client_documents': Document.objects.filter(client_id=client_id)
-            }
-        except:
-            return redirect('/clients/')
+        client = get_object_or_404(User, id=client_id)
+
+        context = {
+            'client': client,
+            'client_crud': ClientForm(instance=client),
+            'all_client_documents': Document.objects.filter(email__recipient=client),
+            'all_client_emails': Email.objects.filter(sender=request.user, recipient__id=client_id),
+            'request_document_form': RequestDocumentForm(initial={'sender': request.user, 'recipient': client}),
+            'submit_document_form': SubmitDocumentForm(initial={'uploaded_by': request.user, 'email': Email()}),
+        }
         return render(request, 'client.html', context)
 
     def post(self, request):
@@ -78,196 +62,82 @@ class Client(View):
         :param request:
         :return:
         '''
-        new_client = _create_user(
-            email = request.POST.get('email'),
-            username = request.POST.get('email'),
-            password = '1234Abcd!',
-            first_name = request.POST.get('first_name'),
-            last_name = request.POST.get('last_name'),
-            is_superuser = False,
-            is_staff = False
-        )
-        new_client.primary_rm = request.user
-        new_client.user_role = User.CLIENT
-        new_client.save()
 
-        # print(request.POST.get('email'))
-        # create client
-        # return HttpResponse(str([i for i in request.POST.items()]))
-        return redirect(f'/client/{new_client.id}')
+        client_id = request.POST.get('client_id')
 
+        if client_id: # update
+            form = ClientForm(request.POST or None, instance = get_object_or_404(User, id=client_id))
+            if form.is_valid():
+                user = form.save()
+                return redirect('view_client', client_id=user.id)
 
+        else: # create
+            form = ClientForm(request.POST)
 
-# ==============   Documents   ==============
+            if form.is_valid():
+                user = form.save()
+                profile = Profile(user=user)
+                profile.save()
+                ProfileBasicDetails(profile=profile).save()
+                ProfileExtendedDetails(profile=profile, managing_rm=request.user, role=globals.CLIENT).save()
+                return redirect('view_client', client_id=user.id)
+
+        return redirect('clients')
+
 class RequestDocument(View):
     '''
-        Generic Class View to handle the RM's 'request document' form
-        This view will
-            1. save/write the document
-            2. create a document db record
-            3. create a email db record
-            4. related the document to the email
-            5. send the notification email to the client
+        Generic Class View to handle the RM's 'RequestDocument' and 'SubmitDocument' forms
     '''
     def post(self, request):
 
-        client = User.objects.get(id=request.POST.get('client_id'))
+        request_form = RequestDocumentForm(request.POST)
+        email = None
+        if request_form.is_valid():
+            email = request_form.save()
 
-        file = request.FILES['requested_file']
+        doc_form = SubmitDocumentForm(request.POST, request.FILES)
+        if doc_form.is_valid():
+            doc = doc_form.save() # TODO: find solution to email failing validation. can not set in views
+            doc.email = email
+            doc.save()
 
-        # create document
-        doc = Document()
-        doc.name = file.name
-        doc.document = file
-        doc.uploaded_by_user = request.user
-        doc.rm = request.user
-        doc.client = client
-        doc.email = None
-        doc.uploaded_by = Document.RM
-        doc.save()
+        email.recipient_notification_email()
 
-        # create email
-        email = Email()
-        email.sender = request.user
-        email.rm = request.user
-        email.client = client
-        email.reciever_email = client.email
-        email.subject = request.POST.get('subject')
-        email.body = request.POST.get('body')
-        email.save()
-
-        doc.email = email
-        doc.save()
-
-        email = {
-            'subject': request.POST.get('subject'),
-            'plain_body': request.POST.get('body'),
-            'sender_title_and_email': 'RM name here <user_email@futureforex.com>',
-            'recievers': ['client@email.com',],
-            'html_body': request.POST.get('body'),
-            'attachment_names': [''],
-        }
-        email_wrapper(email)
-
-        return redirect(f'/client/{client.id}')
+        return redirect('view_client', client_id=request_form.cleaned_data["recipient"].id)
 
 class ClientSubmitDocument(View):
     '''
-        Generic Class View to handle client's document request form submission
-        this view will:
-            1. save/write the document
-            2. create a document db record
-            3. related the document to the RM's requesting email
-            4. send the notification email to the RM of the fulfilled document request
+        Generic Class View to handle a client's document request form submission
     '''
     def get(self, request, token_uuid):
         '''
             returns the client requested document form page/view
-        :param request:
-        :param token_uuid:
-        :return:
         '''
+        email = get_object_or_404(Email, uuid=token_uuid)
         context = {
-            'email': Email.objects.get(uuid=token_uuid)
+            'email': email,
+            'submit_document_form': SubmitDocumentForm(initial={'uploaded_by': email.recipient,
+                                                                'email': email,
+                                                                'document_type': globals.UNDEFINED_DOCUMENT_TYPE
+                                                                }),
         }
         return render(request, 'client_document_request.html', context)
 
     def post(self, request):
         '''
             This method handles the client's requested document form submission
-        :param request:
-        :return:
         '''
-        email = Email.objects.get(uuid=request.POST.get('token'))
-        client = email.client
-        rm = email.rm
+        email = get_object_or_404(Email, uuid=request.POST.get('token'))
 
-        file = request.FILES['requested_file']
+        doc_form = SubmitDocumentForm(request.POST, request.FILES)
+        if doc_form.is_valid():
+            doc = doc_form.save()
+            doc.email.requester_notification_email()
 
-        # create document in db
-        doc = Document()
-        doc.name = file.name
-        doc.document = file
-        doc.uploaded_by_user = client
-        doc.rm = rm
-        doc.client = client
-        doc.email = email
-        doc.uploaded_by = Document.CLIENT
-        doc.save()
+        return redirect('thank_you')
 
-        email = {
-            'subject': 'CLIENT UPLOADED REQUESTED FILE',
-            'plain_body': f'a client has uploaded the request file for email "{email.subject}" '
-                          f'and file "{doc.name}". click here to view: http://127.0.0.1:8000/client/{client.id}',
-            'sender_title_and_email': 'Internal Tooling <no-reply@futureforex.com>',
-            'recievers': [rm.email],
-            'html_body': '',
-            'attachment_names': [''],
-        }
-        email_wrapper(email)
-
-        return redirect(f'/client/{client.id}')
-
-
-
-# ==============   Utility   ==============
-def email_wrapper(email):
-    '''
-        A utility function to send a email's using Django email library
-        this utility function also support including attachments
-        therefor it utilizes EmailMessage rather than the simpler send_mail
-    :param email:
-    :return:
-    '''
-    # TODO: implement email host settings
-    return
-
-    # create list of File's to attach to email
-        # https://stackoverflow.com/questions/34661771/django-emailmessage-attachments-attribute
-    attachments = []  # start with an empty list
-    for filename in data['filenames']:
-        # create the attachment triple for this filename
-        content = open(filename, 'rb').read()
-        attachment = (filename, content, 'application/pdf')
-        # add the attachment to the list
-        attachments.append(attachment)
-
-    # Send email
-    email = EmailMessage(email.subject, email.body, f'{email.sender.full_name} {email.sender.email}',
-                         [email.reciever], attachments=attachments)
-    email.send()
-
-
-def _create_user(
-        email:str = '',
-        username:str = '',
-        password:str = '',
-        first_name:str = '',
-        last_name:str = '',
-        ):
-    '''
-        A utility function to create a User with a UserProfile
-    :param email:
-    :param username:
-    :param password:
-    :param first_name:
-    :param last_name:
-    :return:
-    '''
-    user = User.objects.create_user(
-        username=username,
-        email=email,
-        password=password)
-    user.is_active = True
-    user.save()
-
-    profile = Profile(user=user)
-    profile.save()
-
-    ProfileBasicDetails(profile=profile, first_name=first_name, last_name=last_name).save()
-    ProfileExtendedDetails(profile=profile).save()
-
-    return user
-
+def thank_you(request):
+    '''Thank you page'''
+    return render(request, 'thank_you.html', {})
 
 
