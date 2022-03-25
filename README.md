@@ -29,7 +29,8 @@ This simple Django application is a CRM of sorts to handle 'clients' aswell as d
 2. Create and activate env of choice
 3. `pip install requirements.txt`
 4. `cd FutureForexRMCRMDemo`
-5. `$ python3 manage.py runserver`
+5. `python3 manage.py migrate`
+6. `python3 manage.py runserver`
 
  <br>
 
